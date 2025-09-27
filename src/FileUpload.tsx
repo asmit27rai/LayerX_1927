@@ -271,11 +271,39 @@
 // }
 
 import { useState } from "react";
+import lighthouse from "@lighthouse-web3/sdk";
 
 export default function FileUpload() {
   const [files, setFiles] = useState([]);
   const [dragActive, setDragActive] = useState(false);
   const [responses, setResponses] = useState([]);
+  const [account, setAccount] = useState(null);
+  const [signMessage, setSignMessage] = useState("");
+  const connectToMetaMask = async () => {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+        });
+        setAccount(accounts[0]);
+        console.log("Connected to MetaMask account:", accounts[0]);
+        const authMessage = await lighthouse.getAuthMessage(account);
+
+        // ask MetaMask to sign it
+        const signedMessage = await window.ethereum.request({
+          method: "personal_sign",
+          params: [authMessage.data.message, account],
+        });
+        console.log("Signed Message:", signedMessage);
+        setSignMessage(signedMessage);
+      } catch (error) {
+        console.error("Error connecting to MetaMask:", error.message || error);
+        alert(`Error connecting to MetaMask: ${error.message || error}`);
+      }
+    } else {
+      alert("MetaMask is not installed. Please install MetaMask!");
+    }
+  };
 
   const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -300,7 +328,7 @@ export default function FileUpload() {
             const res = await fetch("https://brfw2w2m-5500.inc1.devtunnels.ms/encrypt", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text, fileName: file.name }),
+              body: JSON.stringify({ text, fileName: file.name, pubKey: account, signMess: signMessage }),
             });
 
             const data = await res.json();
@@ -336,6 +364,8 @@ export default function FileUpload() {
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>File Drag & Drop + Encrypt</h2>
+
+      <button onClick={connectToMetaMask}>Connect Wallet</button>
 
       <div
         style={{ ...styles.dropzone, ...(dragActive ? styles.activeDropzone : {}) }}
