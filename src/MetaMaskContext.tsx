@@ -7,7 +7,9 @@ export const MetaMaskContext = createContext<{ account: string | null; connectTo
 });
 
 // Create provider component
-export const MetaMaskProvider = ({ children }) => {
+import type { PropsWithChildren } from 'react';
+
+export const MetaMaskProvider = ({ children }: PropsWithChildren<{}>) => {
   const [account, setAccount] = useState(null);
 
   // Method to connect to MetaMask

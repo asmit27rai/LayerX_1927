@@ -273,11 +273,13 @@
 import { useState } from "react";
 import lighthouse from "@lighthouse-web3/sdk";
 
+type ResponseItem = { file: string; result: any };
+
 export default function FileUpload() {
-  const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
-  const [responses, setResponses] = useState([]);
-  const [account, setAccount] = useState(null);
+  const [responses, setResponses] = useState<ResponseItem[]>([]);
+  const [account, setAccount] = useState<string | null>(null);
   const [signMessage, setSignMessage] = useState("");
   const connectToMetaMask = async () => {
     if (window.ethereum) {
@@ -287,18 +289,23 @@ export default function FileUpload() {
         });
         setAccount(accounts[0]);
         console.log("Connected to MetaMask account:", accounts[0]);
-        const authMessage = await lighthouse.getAuthMessage(account);
+        const currentAccount = accounts[0];
+        if (!currentAccount) {
+          throw new Error("No account found after connecting to MetaMask.");
+        }
+        const authMessage = await lighthouse.getAuthMessage(currentAccount);
 
         // ask MetaMask to sign it
         const signedMessage = await window.ethereum.request({
           method: "personal_sign",
-          params: [authMessage.data.message, account],
+          params: [authMessage.data.message, currentAccount],
         });
         console.log("Signed Message:", signedMessage);
         setSignMessage(signedMessage);
       } catch (error) {
-        console.error("Error connecting to MetaMask:", error.message || error);
-        alert(`Error connecting to MetaMask: ${error.message || error}`);
+        const errorMsg = (error instanceof Error) ? error.message : String(error);
+        console.error("Error connecting to MetaMask:", errorMsg);
+        alert(`Error connecting to MetaMask: ${errorMsg}`);
       }
     } else {
       alert("MetaMask is not installed. Please install MetaMask!");
