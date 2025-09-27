@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-let web3;
+let web3: Web3 | undefined;
 
 if (typeof window.ethereum !== 'undefined') {
   // Ethereum provider detected

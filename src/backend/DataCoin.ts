@@ -1,4 +1,4 @@
-import web3 from './web3.ts'
+import web3 from './web3.ts';
 
 const dataCoinAddress = "0xa14159C1B383fBCa4A9C197aFC83E01DB4655B24";
 const abi = [
@@ -1347,7 +1347,7 @@ const abi = [
 ];
 
 
-const dataCoin = new web3.eth.Contract(abi, dataCoinAddress);
+const dataCoin = web3 ? new web3.eth.Contract(abi, dataCoinAddress) : null;
 
 export default dataCoin;
 // export dataCoinAbi
