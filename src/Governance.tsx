@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useBalance } from "./BalanceContext";
 
 export default function Governance() {
   const navigate = useNavigate();
-  const totalCoins = 200;
+  const { userBalance } = useBalance();
+
+  // Convert userBalance to number for calculations, fallback to 200 if not available
+  const totalCoins = parseFloat(userBalance) || 200;
 
   // Dynamic proposals
   const [proposals] = useState([

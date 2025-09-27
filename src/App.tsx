@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import FileUpload from "./FileUpload";
 import Governance from "./Governance";
+import { BalanceProvider } from "./BalanceContext";
 import "./App.css";
 
 const Navigation = () => {
@@ -117,17 +118,19 @@ const Home = () => {
 
 export default function App() {
   return (
-    <Router>
-      <div className="app-wrapper">
-        <Navigation />
-        <main className="app-main">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/upload" element={<FileUpload />} />
-            <Route path="/governance" element={<Governance />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
+    <BalanceProvider>
+      <Router>
+        <div className="app-wrapper">
+          <Navigation />
+          <main className="app-main">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/upload" element={<FileUpload />} />
+              <Route path="/governance" element={<Governance />} />
+            </Routes>
+          </main>
+        </div>
+      </Router>
+    </BalanceProvider>
   );
 }

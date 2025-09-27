@@ -273,6 +273,7 @@
 import { useState } from "react";
 import lighthouse from "@lighthouse-web3/sdk";
 import Web3 from "web3";
+import { useBalance } from "./BalanceContext";
 
 // DataCoin ABI - same as your ethers implementation
 const DataCoinABI = [
@@ -413,10 +414,16 @@ export default function FileUpload() {
   const [responses, setResponses] = useState<ResponseItem[]>([]);
   const [account, setAccount] = useState<string | null>(null);
   const [signMessage, setSignMessage] = useState("");
-  const [userBalance, setUserBalance] = useState<string>("0");
-  const [totalSupply, setTotalSupply] = useState<string>("0");
-  const [tokenName, setTokenName] = useState<string>("");
-  const [tokenSymbol, setTokenSymbol] = useState<string>("");
+  const {
+    userBalance,
+    totalSupply,
+    tokenName,
+    tokenSymbol,
+    setUserBalance,
+    setTotalSupply,
+    setTokenName,
+    setTokenSymbol,
+  } = useBalance();
 
   // // DataCoin contract configuration
   // const dataCoinAddress = "0xa14159C1B383fBCa4A9C197aFC83E01DB4655B24";
