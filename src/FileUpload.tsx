@@ -272,6 +272,79 @@
 
 import { useState } from "react";
 import lighthouse from "@lighthouse-web3/sdk";
+import Web3 from "web3";
+
+// DataCoin ABI - same as your ethers implementation
+const DataCoinABI = [
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "to",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+    ],
+    name: "mint",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "role",
+        type: "bytes32",
+      },
+      {
+        internalType: "address",
+        name: "account",
+        type: "address",
+      },
+    ],
+    name: "hasRole",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "mintingPaused",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "MINTER_ROLE",
+    outputs: [
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+];
 
 type ResponseItem = { file: string; result: any };
 
@@ -281,33 +354,288 @@ export default function FileUpload() {
   const [responses, setResponses] = useState<ResponseItem[]>([]);
   const [account, setAccount] = useState<string | null>(null);
   const [signMessage, setSignMessage] = useState("");
-  const connectToMetaMask = async () => {
-    if (window.ethereum) {
+
+  // // DataCoin contract configuration
+  // const dataCoinAddress = "0xa14159C1B383fBCa4A9C197aFC83E01DB4655B24";
+  // const dataCoinABI = [
+  //   {
+  //     inputs: [
+  //       {
+  //         internalType: "address",
+  //         name: "to",
+  //         type: "address",
+  //       },
+  //       {
+  //         internalType: "uint256",
+  //         name: "amount",
+  //         type: "uint256",
+  //       },
+  //     ],
+  //     name: "mintTokens",
+  //     outputs: [],
+  //     stateMutability: "nonpayable",
+  //     type: "function",
+  //   },
+  // ];
+
+  // Function to mint tokens after successful file upload using private key
+  const mintTokensToUser = async (
+    userAddress: string,
+    tokenAmount: number = 10
+  ) => {
+    console.log("🚀 [MINT DEBUG] Starting mint process...");
+    console.log("🔍 [MINT DEBUG] Target address:", userAddress);
+    console.log("🔍 [MINT DEBUG] Token amount:", tokenAmount);
+
+    try {
+      // Get private key from environment variables
+      console.log("🔍 [MINT DEBUG] Checking for private key...");
+      const privateKey = import.meta.env.VITE_PRIVATE_KEY;
+      if (!privateKey) {
+        console.error(
+          "❌ [MINT DEBUG] Private key not found in environment variables"
+        );
+        throw new Error("Private key not found in environment variables");
+      }
+      console.log(
+        "✅ [MINT DEBUG] Private key found (length:",
+        privateKey.length,
+        ")"
+      );
+
+      // Setup Web3 with Sepolia RPC
+      console.log("🔍 [MINT DEBUG] Setting up Web3 connection to Sepolia...");
+
+      // Try multiple Sepolia RPC endpoints for redundancy
+      const sepoliaRPCs = [
+        "https://ethereum-sepolia.publicnode.com",
+        "https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161", // Public Infura endpoint
+        "https://rpc.sepolia.ethpandaops.io",
+        "https://1rpc.io/sepolia", // Original endpoint as fallback
+      ];
+
+      let web3;
+      let workingRPC = null;
+
+      for (const rpc of sepoliaRPCs) {
+        try {
+          console.log("🔍 [MINT DEBUG] Trying RPC:", rpc);
+          const testWeb3 = new Web3(rpc);
+
+          // Test the connection by trying to get the latest block number
+          await testWeb3.eth.getBlockNumber();
+
+          web3 = testWeb3;
+          workingRPC = rpc;
+          console.log("✅ [MINT DEBUG] Successfully connected to RPC:", rpc);
+          break;
+        } catch (error) {
+          const errorMsg =
+            error instanceof Error ? error.message : String(error);
+          console.warn(
+            "⚠️ [MINT DEBUG] Failed to connect to RPC:",
+            rpc,
+            errorMsg
+          );
+          continue;
+        }
+      }
+
+      if (!web3 || !workingRPC) {
+        throw new Error("Failed to connect to any Sepolia RPC endpoint");
+      }
+
+      console.log(
+        "✅ [MINT DEBUG] Web3 instance created with RPC:",
+        workingRPC
+      );
+
+      // Create account from private key
+      console.log("🔍 [MINT DEBUG] Creating account from private key...");
+      // Handle both prefixed (0x...) and non-prefixed private keys
+      const formattedKey = privateKey.startsWith("0x")
+        ? privateKey
+        : `0x${privateKey}`;
+      console.log(
+        "🔍 [MINT DEBUG] Formatted private key length:",
+        formattedKey.length
+      );
+
+      const account = web3.eth.accounts.privateKeyToAccount(formattedKey);
+      web3.eth.accounts.wallet.add(account);
+      console.log("✅ [MINT DEBUG] Account created:", account.address);
+
+      // Create contract instance
+      console.log("🔍 [MINT DEBUG] Creating contract instance...");
+
+      // Use the correct contract address and ABI with the new Web3 instance
+      const dataCoinAddress = "0xa14159C1B383fBCa4A9C197aFC83E01DB4655B24";
+      const contract = new web3.eth.Contract(DataCoinABI, dataCoinAddress);
+
+      console.log(
+        "✅ [MINT DEBUG] Contract instance created for DataCoin contract at:",
+        dataCoinAddress
+      );
+
+      // Convert token amount to wei (18 decimals)
+      const amountInWei = web3.utils.toWei(tokenAmount.toString(), "ether");
+      console.log("🔍 [MINT DEBUG] Amount in Wei:", amountInWei);
+
+      console.log(
+        `🎯 [MINT DEBUG] Minting ${tokenAmount} tokens to ${userAddress} from ${account.address}`
+      );
+
+      // Check account balance first
+      console.log("🔍 [MINT DEBUG] Checking sender account balance...");
+      const balance = await web3.eth.getBalance(account.address);
+      console.log(
+        "💰 [MINT DEBUG] Sender balance:",
+        web3.utils.fromWei(balance, "ether"),
+        "ETH"
+      );
+
+      // Check if account has MINTER_ROLE
+      console.log("🔍 [MINT DEBUG] Checking MINTER_ROLE permissions...");
       try {
+        const minterRole = web3.utils.keccak256("MINTER_ROLE");
+        const hasMinterRole = await contract.methods
+          .hasRole(minterRole, account.address)
+          .call();
+        console.log("� [MINT DEBUG] Has MINTER_ROLE:", hasMinterRole);
+
+        if (!hasMinterRole) {
+          throw new Error(
+            `Account ${account.address} does not have MINTER_ROLE on the contract`
+          );
+        }
+      } catch (roleError) {
+        console.error("❌ [MINT DEBUG] Error checking MINTER_ROLE:", roleError);
+        throw roleError;
+      }
+
+      // Check if minting is paused
+      console.log("🔍 [MINT DEBUG] Checking if minting is paused...");
+      try {
+        const mintingPaused = await contract.methods.mintingPaused().call();
+        console.log("⏸️ [MINT DEBUG] Minting paused:", mintingPaused);
+
+        if (mintingPaused) {
+          throw new Error("Token minting is currently paused on the contract");
+        }
+      } catch (pauseError) {
+        console.error(
+          "❌ [MINT DEBUG] Error checking pause status:",
+          pauseError
+        );
+        throw pauseError;
+      }
+
+      // Estimate gas properly like ethers implementation
+      console.log("🔍 [MINT DEBUG] Estimating gas...");
+      const gasEstimate = await contract.methods
+        .mint(userAddress, amountInWei)
+        .estimateGas({ from: account.address });
+      console.log("⛽ [MINT DEBUG] Gas estimate:", gasEstimate.toString());
+
+      // Get current gas price
+      console.log("🔍 [MINT DEBUG] Getting gas price...");
+      const gasPrice = await web3.eth.getGasPrice();
+      console.log("💸 [MINT DEBUG] Gas price:", gasPrice.toString(), "wei");
+
+      // Calculate total gas cost
+      const totalGasCost = BigInt(gasEstimate) * BigInt(gasPrice);
+      console.log(
+        "💰 [MINT DEBUG] Total gas cost:",
+        web3.utils.fromWei(totalGasCost.toString(), "ether"),
+        "ETH"
+      );
+
+      // Send transaction
+      console.log("📡 [MINT DEBUG] Sending transaction...");
+      const tx = await contract.methods.mint(userAddress, amountInWei).send({
+        from: account.address,
+        gas: gasEstimate.toString(),
+        gasPrice: gasPrice.toString(),
+      });
+
+      console.log("✅ [MINT DEBUG] Transaction successful!");
+      console.log("🔗 [MINT DEBUG] Transaction hash:", tx.transactionHash);
+      console.log("📊 [MINT DEBUG] Gas used:", tx.gasUsed);
+      console.log("🎉 [MINT DEBUG] Mint process completed successfully!");
+
+      return {
+        success: true,
+        txHash: tx.transactionHash,
+        amount: tokenAmount,
+        from: account.address,
+      };
+    } catch (error) {
+      console.error("❌ [MINT DEBUG] Error in mint process:", error);
+      console.error(
+        "❌ [MINT DEBUG] Error details:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      console.error("❌ [MINT DEBUG] Full error object:", error);
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+        amount: tokenAmount,
+      };
+    }
+  };
+
+  const connectToMetaMask = async () => {
+    console.log("🔗 [WALLET DEBUG] Starting MetaMask connection...");
+
+    if (window.ethereum) {
+      console.log("✅ [WALLET DEBUG] MetaMask detected");
+
+      try {
+        console.log("🔍 [WALLET DEBUG] Requesting account access...");
         const accounts = await window.ethereum.request({
           method: "eth_requestAccounts",
         });
+
+        console.log("✅ [WALLET DEBUG] Accounts received:", accounts);
         setAccount(accounts[0]);
-        console.log("Connected to MetaMask account:", accounts[0]);
+        console.log(
+          "🔗 [WALLET DEBUG] Connected to MetaMask account:",
+          accounts[0]
+        );
+
         const currentAccount = accounts[0];
         if (!currentAccount) {
           throw new Error("No account found after connecting to MetaMask.");
         }
+
+        console.log("🔍 [WALLET DEBUG] Getting lighthouse auth message...");
         const authMessage = await lighthouse.getAuthMessage(currentAccount);
+        console.log("📝 [WALLET DEBUG] Auth message received:", authMessage);
 
         // ask MetaMask to sign it
+        console.log("✍️ [WALLET DEBUG] Requesting message signature...");
         const signedMessage = await window.ethereum.request({
           method: "personal_sign",
           params: [authMessage.data.message, currentAccount],
         });
-        console.log("Signed Message:", signedMessage);
+        console.log("✅ [WALLET DEBUG] Message signed successfully");
+        console.log("🔏 [WALLET DEBUG] Signed Message:", signedMessage);
         setSignMessage(signedMessage);
+        console.log(
+          "🎉 [WALLET DEBUG] MetaMask connection completed successfully!"
+        );
       } catch (error) {
-        const errorMsg = (error instanceof Error) ? error.message : String(error);
-        console.error("Error connecting to MetaMask:", errorMsg);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error(
+          "❌ [WALLET DEBUG] Error connecting to MetaMask:",
+          errorMsg
+        );
+        console.error("❌ [WALLET DEBUG] Full error:", error);
         alert(`Error connecting to MetaMask: ${errorMsg}`);
       }
     } else {
+      console.error("❌ [WALLET DEBUG] MetaMask not detected!");
       alert("MetaMask is not installed. Please install MetaMask!");
     }
   };
@@ -324,28 +652,91 @@ export default function FileUpload() {
 
   const processFiles = (fileList: FileList) => {
     const newFiles = Array.from(fileList);
+    console.log("📂 [FILE DEBUG] Processing", newFiles.length, "files");
 
-    newFiles.forEach((file) => {
+    newFiles.forEach((file, index) => {
+      console.log(
+        `📄 [FILE DEBUG] File ${index + 1}:`,
+        file.name,
+        "(" + file.type + ")"
+      );
+
       if (file.type === "text/plain") {
+        console.log("✅ [FILE DEBUG] File type valid, reading content...");
         const reader = new FileReader();
         reader.onload = async (event) => {
           const text = event.target?.result;
+          console.log("📁 [FILE DEBUG] File read successfully:", file.name);
+          console.log(
+            "📄 [FILE DEBUG] File content length:",
+            text?.toString().length
+          );
 
           try {
-            const res = await fetch("https://brfw2w2m-5500.inc1.devtunnels.ms/encrypt", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text, fileName: file.name, pubKey: account, signMess: signMessage }),
-            });
+            console.log(
+              "🔍 [FILE DEBUG] Sending file to encryption endpoint..."
+            );
+            const res = await fetch(
+              "https://brfw2w2m-5500.inc1.devtunnels.ms/encrypt",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  text,
+                  fileName: file.name,
+                  pubKey: account,
+                  signMess: signMessage,
+                }),
+              }
+            );
 
+            console.log("📡 [FILE DEBUG] Server response status:", res.status);
             const data = await res.json();
-            setResponses((prev) => [...prev, { file: file.name, result: data }]);
+            console.log("📊 [FILE DEBUG] Server response data:", data);
+
+            // If upload was successful and user is connected, mint tokens
+            // Check if data.data is an array and has at least one element with Hash
+            if (data?.data?.[0]?.Hash && account) {
+              console.log(
+                "🎯 [FILE DEBUG] File uploaded successfully, starting token minting..."
+              );
+              console.log("🔗 [FILE DEBUG] IPFS Hash:", data.data[0].Hash);
+              console.log("👤 [FILE DEBUG] User account:", account);
+
+              const mintResult = await mintTokensToUser(account, 10);
+              console.log(
+                "🎉 [FILE DEBUG] Token minting completed:",
+                mintResult
+              );
+
+              // Add mint result to the response
+              data.mintResult = mintResult;
+            } else {
+              console.log(
+                "⚠️ [FILE DEBUG] Skipping token minting - conditions not met:"
+              );
+              console.log("   - Has IPFS Hash:", !!data?.data?.[0]?.Hash);
+              console.log("   - Has account:", !!account);
+              console.log("   - Data structure:", data?.data);
+            }
+
+            setResponses((prev) => [
+              ...prev,
+              { file: file.name, result: data },
+            ]);
           } catch (err) {
-            console.error("Upload error:", err);
+            console.error("❌ [FILE DEBUG] Upload error for file:", file.name);
+            console.error("❌ [FILE DEBUG] Error details:", err);
           }
         };
         reader.readAsText(file);
       } else {
+        console.warn(
+          "⚠️ [FILE DEBUG] Unsupported file type:",
+          file.type,
+          "for file:",
+          file.name
+        );
         console.warn("Only .txt files are supported.");
       }
     });
@@ -370,12 +761,30 @@ export default function FileUpload() {
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.title}>File Drag & Drop + Encrypt</h2>
+      <h2 style={styles.title}>File Drag & Drop + Encrypt + Earn Tokens</h2>
 
-      <button onClick={connectToMetaMask}>Connect Wallet</button>
+      <div style={{ marginBottom: "20px" }}>
+        {!account ? (
+          <button onClick={connectToMetaMask} style={styles.connectButton}>
+            Connect Wallet
+          </button>
+        ) : (
+          <div style={styles.walletInfo}>
+            <span>
+              ✅ Connected: {account.substring(0, 6)}...{account.substring(38)}
+            </span>
+            <div style={{ fontSize: "0.8em", color: "#666", marginTop: "5px" }}>
+              Upload files to automatically receive 10 tokens on Sepolia! 🎁
+            </div>
+          </div>
+        )}
+      </div>
 
       <div
-        style={{ ...styles.dropzone, ...(dragActive ? styles.activeDropzone : {}) }}
+        style={{
+          ...styles.dropzone,
+          ...(dragActive ? styles.activeDropzone : {}),
+        }}
         onDragEnter={handleDrag}
         onDragOver={handleDrag}
         onDragLeave={handleDrag}
@@ -383,7 +792,9 @@ export default function FileUpload() {
         onClick={() => document.getElementById("fileInput")?.click()}
       >
         <p style={styles.dropText}>
-          {dragActive ? "Release to upload files" : "Drag & drop .txt files here"}
+          {dragActive
+            ? "Release to upload files"
+            : "Drag & drop .txt files here"}
         </p>
         <p style={styles.dropSubText}>or click to browse</p>
         <input
@@ -416,9 +827,28 @@ export default function FileUpload() {
             {responses.map((res, idx) => (
               <li key={idx}>
                 <strong>{res.file}:</strong>{" "}
-                {res.result?.data?.Hash
-                  ? `Uploaded → CID: ${res.result.data.Hash}`
-                  : `Error: ${res.result?.error || "Unknown error"}`}
+                {res.result?.data?.[0]?.Hash ? (
+                  <div>
+                    <div>Uploaded → CID: {res.result.data[0].Hash}</div>
+                    {res.result?.mintResult && (
+                      <div style={{ marginLeft: "10px", fontSize: "0.9em" }}>
+                        {res.result.mintResult.success
+                          ? `✅ Sent ${
+                              res.result.mintResult.amount
+                            } tokens to your wallet! TX: ${res.result.mintResult.txHash?.substring(
+                              0,
+                              10
+                            )}... (via ${res.result.mintResult.from?.substring(
+                              0,
+                              6
+                            )}...)`
+                          : `❌ Token transfer failed: ${res.result.mintResult.error}`}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  `Error: ${res.result?.error || "Unknown error"}`
+                )}
               </li>
             ))}
           </ul>
@@ -476,5 +906,23 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: "#f0fdf4",
     padding: "20px",
     borderRadius: "8px",
+  },
+  connectButton: {
+    backgroundColor: "#4f46e5",
+    color: "white",
+    border: "none",
+    padding: "12px 24px",
+    borderRadius: "8px",
+    fontSize: "16px",
+    cursor: "pointer",
+    transition: "background-color 0.3s",
+  },
+  walletInfo: {
+    backgroundColor: "#f0fdf4",
+    padding: "12px 16px",
+    borderRadius: "8px",
+    border: "1px solid #22c55e",
+    color: "#15803d",
+    fontWeight: "500",
   },
 };
