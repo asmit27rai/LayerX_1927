@@ -344,6 +344,64 @@ const DataCoinABI = [
     stateMutability: "view",
     type: "function",
   },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "account",
+        type: "address",
+      },
+    ],
+    name: "balanceOf",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "totalSupply",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "name",
+    outputs: [
+      {
+        internalType: "string",
+        name: "",
+        type: "string",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "symbol",
+    outputs: [
+      {
+        internalType: "string",
+        name: "",
+        type: "string",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
 ];
 import StartReclaimVerification from "./reclaimVerification";
 
@@ -355,6 +413,10 @@ export default function FileUpload() {
   const [responses, setResponses] = useState<ResponseItem[]>([]);
   const [account, setAccount] = useState<string | null>(null);
   const [signMessage, setSignMessage] = useState("");
+  const [userBalance, setUserBalance] = useState<string>("0");
+  const [totalSupply, setTotalSupply] = useState<string>("0");
+  const [tokenName, setTokenName] = useState<string>("");
+  const [tokenSymbol, setTokenSymbol] = useState<string>("");
 
   // // DataCoin contract configuration
   // const dataCoinAddress = "0xa14159C1B383fBCa4A9C197aFC83E01DB4655B24";
@@ -378,6 +440,126 @@ export default function FileUpload() {
   //     type: "function",
   //   },
   // ];
+
+  // Function to fetch and log DaoCoin information
+  const fetchDaoCoinInfo = async (userAddress: string) => {
+    console.log(
+      "\n🪙 [DATACOIN INFO] ==========================================="
+    );
+    console.log("🪙 [DATACOIN INFO] Fetching DataCoin information...");
+    console.log("🪙 [DATACOIN INFO] User Address:", userAddress);
+
+    try {
+      // Setup Web3 connection (reusing the same logic as mint function)
+      const sepoliaRPCs = [
+        "https://ethereum-sepolia.publicnode.com",
+        "https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
+        "https://rpc.sepolia.ethpandaops.io",
+        "https://1rpc.io/sepolia",
+      ];
+
+      let web3;
+      let workingRPC = null;
+
+      for (const rpc of sepoliaRPCs) {
+        try {
+          const testWeb3 = new Web3(rpc);
+          await testWeb3.eth.getBlockNumber();
+          web3 = testWeb3;
+          workingRPC = rpc;
+          break;
+        } catch (error) {
+          continue;
+        }
+      }
+
+      if (!web3 || !workingRPC) {
+        throw new Error("Failed to connect to any Sepolia RPC endpoint");
+      }
+
+      const dataCoinAddress = "0xa14159C1B383fBCa4A9C197aFC83E01DB4655B24";
+      const contract = new web3.eth.Contract(DataCoinABI, dataCoinAddress);
+
+      console.log("🪙 [DATACOIN INFO] Connected to RPC:", workingRPC);
+      console.log("🪙 [DATACOIN INFO] Contract Address:", dataCoinAddress);
+
+      // Fetch token basic information
+      const [name, symbol, totalSupply, userBalance] = await Promise.all([
+        contract.methods.name().call() as Promise<string>,
+        contract.methods.symbol().call() as Promise<string>,
+        contract.methods.totalSupply().call() as Promise<string>,
+        contract.methods.balanceOf(userAddress).call() as Promise<string>,
+      ]);
+
+      // Convert from wei to readable format
+      const totalSupplyFormatted = web3.utils.fromWei(
+        totalSupply.toString(),
+        "ether"
+      );
+      const userBalanceFormatted = web3.utils.fromWei(
+        userBalance.toString(),
+        "ether"
+      );
+
+      // Update state
+      setTokenName(name);
+      setTokenSymbol(symbol);
+      setTotalSupply(totalSupplyFormatted);
+      setUserBalance(userBalanceFormatted);
+
+      // Console logs with beautiful formatting
+      console.log("\n🎯 [DATACOIN INFO] TOKEN INFORMATION:");
+      console.log("📛 [DATACOIN INFO] Token Name:", name);
+      console.log("🏷️ [DATACOIN INFO] Token Symbol:", symbol);
+      console.log("📊 [DATACOIN INFO] Contract Address:", dataCoinAddress);
+
+      console.log("\n💰 [DATACOIN INFO] SUPPLY & BALANCE:");
+      console.log(
+        "🌍 [DATACOIN INFO] Total Supply (Mined):",
+        totalSupplyFormatted,
+        symbol
+      );
+      console.log(
+        "👤 [DATACOIN INFO] Your Balance:",
+        userBalanceFormatted,
+        symbol
+      );
+      console.log(
+        "📈 [DATACOIN INFO] Your Balance (Raw Wei):",
+        userBalance.toString()
+      );
+      console.log(
+        "🌐 [DATACOIN INFO] Total Supply (Raw Wei):",
+        totalSupply.toString()
+      );
+
+      console.log("\n📊 [DATACOIN INFO] STATISTICS:");
+      const balancePercentage =
+        BigInt(totalSupply) > 0
+          ? (BigInt(userBalance) * BigInt(10000)) /
+            BigInt(totalSupply) /
+            BigInt(100)
+          : BigInt(0);
+      console.log(
+        "📊 [DATACOIN INFO] Your Share of Total Supply:",
+        balancePercentage.toString() + "%"
+      );
+      console.log(
+        "🪙 [DATACOIN INFO] ==========================================="
+      );
+
+      return {
+        name,
+        symbol,
+        totalSupply: totalSupplyFormatted,
+        userBalance: userBalanceFormatted,
+        contractAddress: dataCoinAddress,
+      };
+    } catch (error) {
+      console.error("❌ [DATACOIN INFO] Error fetching DataCoin info:", error);
+      return null;
+    }
+  };
 
   // Function to mint tokens after successful file upload using private key
   const mintTokensToUser = async (
@@ -564,6 +746,10 @@ export default function FileUpload() {
       console.log("📊 [MINT DEBUG] Gas used:", tx.gasUsed);
       console.log("🎉 [MINT DEBUG] Mint process completed successfully!");
 
+      // Fetch and log updated DaoCoin information after minting
+      console.log("\n🔄 [MINT DEBUG] Fetching updated DataCoin information...");
+      await fetchDaoCoinInfo(userAddress);
+
       return {
         success: true,
         txHash: tx.transactionHash,
@@ -628,6 +814,12 @@ export default function FileUpload() {
         console.log(
           "🎉 [WALLET DEBUG] MetaMask connection completed successfully!"
         );
+
+        // Fetch and display DaoCoin information after connecting
+        console.log(
+          "\n🔄 [WALLET DEBUG] Fetching DataCoin information for connected account..."
+        );
+        await fetchDaoCoinInfo(currentAccount);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         console.error(
@@ -790,20 +982,46 @@ export default function FileUpload() {
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>File Drag & Drop + Encrypt + Earn Tokens</h2>
-      
-      <button onClick={connectToMetaMask}>Connect Wallet</button>
-{showReclaimVerification ? (
+
+      <div style={styles.walletSection}>
+        <button onClick={connectToMetaMask} style={styles.connectButton}>
+          {account ? "Wallet Connected" : "Connect Wallet"}
+        </button>
+
+        {account && (
+          <div style={styles.walletInfo}>
+            <div>
+              <strong>🔗 Connected:</strong> {account.substring(0, 6)}...
+              {account.substring(account.length - 4)}
+            </div>
+            {tokenName && (
+              <>
+                <div>
+                  <strong>🪙 Token:</strong> {tokenName} ({tokenSymbol})
+                </div>
+                <div>
+                  <strong>💰 Your Balance:</strong> {userBalance} {tokenSymbol}
+                </div>
+                <div>
+                  <strong>🌍 Total Mined:</strong> {totalSupply} {tokenSymbol}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {showReclaimVerification ? (
         <div style={styles.verificationContainer}>
           <h3>Please complete verification before uploading files</h3>
-          <StartReclaimVerification onVerificationComplete={handleVerificationComplete} />
+          <StartReclaimVerification
+            onVerificationComplete={handleVerificationComplete}
+          />
           <div style={styles.buttonContainer}>
-            <button 
-              onClick={handleSkipVerification}
-              style={styles.skipButton}
-            >
+            <button onClick={handleSkipVerification} style={styles.skipButton}>
               Skip verification for now
             </button>
-            <button 
+            <button
               onClick={() => setShowReclaimVerification(false)}
               style={styles.cancelButton}
             >
@@ -813,7 +1031,10 @@ export default function FileUpload() {
         </div>
       ) : (
         <div
-          style={{ ...styles.dropzone, ...(dragActive ? styles.activeDropzone : {}) }}
+          style={{
+            ...styles.dropzone,
+            ...(dragActive ? styles.activeDropzone : {}),
+          }}
           onDragEnter={handleDrag}
           onDragOver={handleDrag}
           onDragLeave={handleDrag}
@@ -821,7 +1042,9 @@ export default function FileUpload() {
           onClick={() => document.getElementById("fileInput")?.click()}
         >
           <p style={styles.dropText}>
-            {dragActive ? "Release to upload files" : "Drag & drop .txt files here"}
+            {dragActive
+              ? "Release to upload files"
+              : "Drag & drop .txt files here"}
           </p>
           <p style={styles.dropSubText}>or click to browse</p>
           <input
@@ -935,7 +1158,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: "20px",
     borderRadius: "8px",
   },
-    verificationContainer: {
+  verificationContainer: {
     marginTop: "30px",
     marginBottom: "30px",
     padding: "30px",
@@ -971,6 +1194,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: "14px",
     transition: "background-color 0.3s ease",
   },
+  walletSection: {
+    marginBottom: "30px",
+    padding: "20px",
+    backgroundColor: "#ffffff",
+    borderRadius: "8px",
+    border: "1px solid #e5e7eb",
+  },
   connectButton: {
     backgroundColor: "#4f46e5",
     color: "white",
@@ -980,13 +1210,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: "16px",
     cursor: "pointer",
     transition: "background-color 0.3s",
+    width: "100%",
+    marginBottom: "15px",
   },
   walletInfo: {
     backgroundColor: "#f0fdf4",
-    padding: "12px 16px",
+    padding: "15px",
     borderRadius: "8px",
     border: "1px solid #22c55e",
     color: "#15803d",
-    fontWeight: "500",
+    fontSize: "14px",
+    lineHeight: "1.6",
   },
 };

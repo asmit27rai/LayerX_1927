@@ -54,6 +54,7 @@ function StartReclaimVerification({
           // Handle verification failure
         },
       });
+      console.log("proofs state updated:", proofs);
     } catch (error) {
       console.error("Error initializing Reclaim:", error);
       setIsLoading(false);
