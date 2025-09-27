@@ -26,6 +26,7 @@
     "fs": "^0.0.1-security",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.3",
     "stream-browserify": "^3.0.0",
     "util": "^0.12.5",
     "web3": "^4.16.0"
