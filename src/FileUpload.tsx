@@ -272,6 +272,7 @@
 
 import { useState } from "react";
 import lighthouse from "@lighthouse-web3/sdk";
+import StartReclaimVerification from "./reclaimVerification";
 
 type ResponseItem = { file: string; result: any };
 
@@ -281,6 +282,8 @@ export default function FileUpload() {
   const [responses, setResponses] = useState<ResponseItem[]>([]);
   const [account, setAccount] = useState<string | null>(null);
   const [signMessage, setSignMessage] = useState("");
+  const [showReclaimVerification, setShowReclaimVerification] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
   const connectToMetaMask = async () => {
     if (window.ethereum) {
       try {
@@ -322,7 +325,7 @@ export default function FileUpload() {
     }
   };
 
-  const processFiles = (fileList: FileList) => {
+  const processFilesAfterVerification = (fileList: FileList) => {
     const newFiles = Array.from(fileList);
 
     newFiles.forEach((file) => {
@@ -353,6 +356,31 @@ export default function FileUpload() {
     setFiles((prev) => [...prev, ...newFiles]);
   };
 
+  const processFiles = (fileList: FileList) => {
+    // Store the files to be processed after verification
+    setPendingFiles(fileList);
+    // Trigger Reclaim verification first
+    setShowReclaimVerification(true);
+  };
+
+  const handleVerificationComplete = () => {
+    // After verification is complete, process the pending files
+    if (pendingFiles) {
+      processFilesAfterVerification(pendingFiles);
+      setPendingFiles(null);
+    }
+    setShowReclaimVerification(false);
+  };
+
+  const handleSkipVerification = () => {
+    // Skip verification and process files directly
+    if (pendingFiles) {
+      processFilesAfterVerification(pendingFiles);
+      setPendingFiles(null);
+    }
+    setShowReclaimVerification(false);
+  };
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -374,27 +402,48 @@ export default function FileUpload() {
 
       <button onClick={connectToMetaMask}>Connect Wallet</button>
 
-      <div
-        style={{ ...styles.dropzone, ...(dragActive ? styles.activeDropzone : {}) }}
-        onDragEnter={handleDrag}
-        onDragOver={handleDrag}
-        onDragLeave={handleDrag}
-        onDrop={handleDrop}
-        onClick={() => document.getElementById("fileInput")?.click()}
-      >
-        <p style={styles.dropText}>
-          {dragActive ? "Release to upload files" : "Drag & drop .txt files here"}
-        </p>
-        <p style={styles.dropSubText}>or click to browse</p>
-        <input
-          id="fileInput"
-          type="file"
-          multiple
-          accept=".txt"
-          onChange={handleFileSelect}
-          style={{ display: "none" }}
-        />
-      </div>
+      {showReclaimVerification ? (
+        <div style={styles.verificationContainer}>
+          <h3>Please complete verification before uploading files</h3>
+          <StartReclaimVerification onVerificationComplete={handleVerificationComplete} />
+          <div style={styles.buttonContainer}>
+            <button 
+              onClick={handleSkipVerification}
+              style={styles.skipButton}
+            >
+              Skip verification for now
+            </button>
+            <button 
+              onClick={() => setShowReclaimVerification(false)}
+              style={styles.cancelButton}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{ ...styles.dropzone, ...(dragActive ? styles.activeDropzone : {}) }}
+          onDragEnter={handleDrag}
+          onDragOver={handleDrag}
+          onDragLeave={handleDrag}
+          onDrop={handleDrop}
+          onClick={() => document.getElementById("fileInput")?.click()}
+        >
+          <p style={styles.dropText}>
+            {dragActive ? "Release to upload files" : "Drag & drop .txt files here"}
+          </p>
+          <p style={styles.dropSubText}>or click to browse</p>
+          <input
+            id="fileInput"
+            type="file"
+            multiple
+            accept=".txt"
+            onChange={handleFileSelect}
+            style={{ display: "none" }}
+          />
+        </div>
+      )}
 
       {files.length > 0 && (
         <div style={styles.fileList}>
@@ -476,5 +525,41 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: "#f0fdf4",
     padding: "20px",
     borderRadius: "8px",
+  },
+  verificationContainer: {
+    marginTop: "30px",
+    marginBottom: "30px",
+    padding: "30px",
+    backgroundColor: "#fff3cd",
+    borderRadius: "8px",
+    textAlign: "center",
+    border: "1px solid #ffeaa7",
+  },
+  buttonContainer: {
+    marginTop: "20px",
+    display: "flex",
+    gap: "15px",
+    justifyContent: "center",
+    flexWrap: "wrap",
+  },
+  skipButton: {
+    padding: "10px 20px",
+    backgroundColor: "#6c757d",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    fontSize: "14px",
+    transition: "background-color 0.3s ease",
+  },
+  cancelButton: {
+    padding: "10px 20px",
+    backgroundColor: "#dc3545",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    fontSize: "14px",
+    transition: "background-color 0.3s ease",
   },
 };
