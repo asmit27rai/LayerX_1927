@@ -124,7 +124,7 @@ export default function Governance() {
                 </div>
 
                 <div style={styles.cardFooter}>
-                  <button style={styles.voteButton}>🗳️ Cast Vote</button>
+                  <button style={styles.voteButton}>Vote</button>
                   <div style={styles.voteInfo}>
                     <span style={styles.voteCount}>{proposal.votes}</span>
                     <span style={styles.voteLabel}>votes</span>
