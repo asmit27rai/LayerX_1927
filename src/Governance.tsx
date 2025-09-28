@@ -4,13 +4,15 @@ import { useBalance } from "./BalanceContext";
 
 export default function Governance() {
   const navigate = useNavigate();
-  const { totalSupply } = useBalance();
+  const { totalSupply, userBalance } = useBalance();
 
   // Convert totalSupply to number for calculations, fallback to 200 if not available
   const totalCoins = parseFloat(totalSupply) || 200;
 
-  // Dynamic proposals
-  const [proposals] = useState([
+  const userBalanceNum = parseInt(userBalance) || 0;
+  const VOTE_INCREMENT = userBalanceNum > 0 ? userBalanceNum : 1;
+
+  const [proposals, setProposals] = useState([
     {
       id: 1,
       title: "Increase Staking Rewards",
@@ -40,6 +42,37 @@ export default function Governance() {
       votes: 150,
     },
   ]);
+
+  // Track which proposals the current user has voted on (true/false)
+  // Keyed by proposal id: { [id]: true }
+  const [votedMap, setVotedMap] = useState<Record<number, boolean>>({});
+
+  const handleVoteToggle = (proposalId: number) => {
+    setProposals((prev) =>
+      prev.map((p) => {
+        if (p.id !== proposalId) return p;
+
+        const hasVoted = !!votedMap[proposalId];
+
+        // Toggle: if user hasn't voted => add increment, else subtract increment
+        const newVotes = hasVoted
+          ? Math.max(0, p.votes - VOTE_INCREMENT)
+          : p.votes + VOTE_INCREMENT;
+
+        return { ...p, votes: newVotes };
+      })
+    );
+
+    setVotedMap((prev) => {
+      const newMap = { ...prev };
+      if (newMap[proposalId]) {
+        delete newMap[proposalId]; // unvote -> remove flag
+      } else {
+        newMap[proposalId] = true; // mark as voted
+      }
+      return newMap;
+    });
+  };
 
   return (
     <div style={styles.container}>
@@ -83,6 +116,7 @@ export default function Governance() {
           {proposals.map((proposal, index) => {
             const passed = proposal.votes / totalCoins > 0.5;
             const percentage = ((proposal.votes / totalCoins) * 100).toFixed(1);
+            const hasVoted = !!votedMap[proposal.id];
 
             return (
               <div
@@ -124,7 +158,16 @@ export default function Governance() {
                 </div>
 
                 <div style={styles.cardFooter}>
-                  <button style={styles.voteButton}>Vote</button>
+                  <button
+                    style={{
+                      ...styles.voteButton,
+                      opacity: hasVoted ? 0.9 : 1,
+                      transform: hasVoted ? "translateY(-1px)" : "none",
+                    }}
+                    onClick={() => handleVoteToggle(proposal.id)}
+                  >
+                    {hasVoted ? `Unvote (-${VOTE_INCREMENT})` : `Vote (+${VOTE_INCREMENT})`}
+                  </button>
                   <div style={styles.voteInfo}>
                     <span style={styles.voteCount}>{proposal.votes}</span>
                     <span style={styles.voteLabel}>votes</span>
