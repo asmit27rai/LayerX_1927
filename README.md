@@ -4,6 +4,8 @@
 
 LayerX is a comprehensive DataDAO platform that combines secure data storage, cryptographic verification, token economics, and decentralized governance. Users can upload their encrypted data, earn DataCoins as rewards, and use their token holdings to participate in platform governance with voting weight proportional to their stake.
 
+## Demo : https://youtu.be/Hzb2NDAZwA8
+
 # System Design
 
 <p align="center">
