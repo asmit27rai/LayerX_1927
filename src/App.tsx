@@ -78,22 +78,34 @@ const Home = () => {
         </div>
 
         <div className="feature-cards">
-          <div className="feature-card" onClick={() => navigate("/upload")}>
+          <div className="feature-card">
             <div className="card-icon">📁</div>
             <h3 className="card-title">Upload Data</h3>
             <p className="card-description">
               Securely upload and manage your data with blockchain technology
             </p>
-            <div className="card-arrow">→</div>
+            <button
+              className="card-arrow-button"
+              aria-label="Go to Upload"
+              onClick={() => navigate("/upload")}
+            >
+              <span className="card-arrow">→</span>
+            </button>
           </div>
 
-          <div className="feature-card" onClick={() => navigate("/governance")}>
+          <div className="feature-card">
             <div className="card-icon">🗳️</div>
             <h3 className="card-title">Governance</h3>
             <p className="card-description">
               Participate in decision-making and shape the platform's future
             </p>
-            <div className="card-arrow">→</div>
+            <button
+              className="card-arrow-button"
+              aria-label="Go to Governance"
+              onClick={() => navigate("/governance")}
+            >
+              <span className="card-arrow">→</span>
+            </button>
           </div>
         </div>
 
