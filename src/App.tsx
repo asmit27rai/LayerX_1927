@@ -68,7 +68,7 @@ const Home = () => {
             </div>
           </div>
           <h1 className="hero-title">
-            Welcome to <span className="gradient-text">DataCoin Portal</span>
+            Welcome to <span className="gradient-text">LayerX Portal</span>
           </h1>
           <p className="hero-subtitle">
             Your gateway to decentralized data management and governance
