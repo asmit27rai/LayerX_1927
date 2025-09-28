@@ -25,7 +25,7 @@ export default function Governance() {
       title: "Reduce Transaction Fees",
       description:
         "Lower network transaction fees by 50% to improve accessibility for all users.",
-      votes: 95,
+      votes: 50201220,
     },
     {
       id: 3,
@@ -39,7 +39,7 @@ export default function Governance() {
       title: "Community Grant Program",
       description:
         "Launch $100K community grant program to fund innovative projects in our ecosystem.",
-      votes: 150,
+      votes: 40201220,
     },
   ]);
 

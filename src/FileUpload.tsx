@@ -1,275 +1,3 @@
-// import React, { useEffect, useState } from "react";
-// import {
-//   BrowserRouter,
-//   Routes,
-//   Route,
-//   useSearchParams,
-//   useNavigate,
-// } from "react-router-dom";
-// import {
-//   useCreateEntity,
-//   useHypergraphApp,
-//   useQuery,
-//   useSpaces,
-// } from "@graphprotocol/hypergraph-react";
-// import { Event } from "./schema";
-
-// function Login() {
-//   const { redirectToConnect } = useHypergraphApp();
-//   return (
-//     <button
-//       onClick={() =>
-//         redirectToConnect({
-//           storage: localStorage,
-//           connectUrl: "https://connect.geobrowser.io/",
-//           successUrl: `${window.location.origin}/authenticate-success`,
-//           redirectFn: (url) => (window.location.href = url.toString()),
-//         })
-//       }
-//     >
-//       Authenticate with Connect
-//     </button>
-//   );
-// }
-
-// function RouteComponent() {
-//   const [searchParams] = useSearchParams();
-//   const ciphertext = searchParams.get("ciphertext");
-//   const nonce = searchParams.get("nonce");
-//   const { processConnectAuthSuccess } = useHypergraphApp();
-//   const navigate = useNavigate();
-//   const isProcessingRef = React.useRef(false);
-
-//   useEffect(() => {
-//     if (isProcessingRef.current) return;
-//     if (!ciphertext || !nonce) {
-//       console.warn("[Auth] Missing params");
-//       return;
-//     }
-
-//     try {
-//       processConnectAuthSuccess({
-//         storage: localStorage,
-//         ciphertext,
-//         nonce,
-//       });
-//       isProcessingRef.current = true;
-//       navigate("/", { replace: true });
-//     } catch (error) {
-//       alert(error instanceof Error ? error.message : String(error));
-//     }
-//   }, [ciphertext, nonce, processConnectAuthSuccess, navigate]);
-
-//   return <div>Authenticating…</div>;
-// }
-
-// export default function App() {
-//   const { data: privateSpaces, isPending: isSpacesPending } = useSpaces({
-//     mode: "private",
-//   });
-//   const targetSpaceId = "0a469f84-ffde-4883-a7f0-18567a11b036";
-//   const targetSpace = privateSpaces?.find((s) => s.id === targetSpaceId);
-//   const isSpaceReady = !isSpacesPending && Boolean(targetSpace);
-
-//   // State to track creation
-//   const [eventsCreated, setEventsCreated] = useState(false);
-
-//   // CreateEntity hook
-//   const createEvent = useCreateEntity(Event, { space: targetSpaceId });
-
-//   // Create three events once when space is ready
-//   useEffect(() => {
-//     if (!isSpaceReady || eventsCreated) return;
-
-//     (async () => {
-//       try {
-//         await createEvent({ name: "Hello World1" });
-//         await createEvent({ name: "Hello World2" });
-//         await createEvent({ name: "Hello World3" });
-//         setEventsCreated(true);
-//       } catch (err) {
-//         console.error("Create error:", err);
-//         setEventsCreated(false);
-//       }
-//     })();
-//   }, [isSpaceReady, createEvent, eventsCreated]);
-
-//   // Query hook with subscription for live updates
-//   const { data: eventsData, isPending: isQueryPending } = useQuery(Event, {
-//     mode: "private",
-//     space: targetSpaceId,
-//     filter: {
-//       name: {
-//         is: "Hello World1",
-//       }
-//     }
-//   });
-
-//   return (
-//     <BrowserRouter>
-//       <div className="p-4">
-//         <Routes>
-//           <Route path="/" element={<Login />} />
-//           <Route
-//             path="/authenticate-success"
-//             element={<RouteComponent />}
-//           />
-//         </Routes>
-
-//         {isSpacesPending && <p>Loading spaces…</p>}
-
-//         {!isSpacesPending && !isSpaceReady && (
-//           <div>
-//             <p>Space not found: {targetSpaceId}</p>
-//             <p>
-//               Available spaces:{" "}
-//               {privateSpaces?.map((s) => s.name).join(", ") || "None"}
-//             </p>
-//           </div>
-//         )}
-
-//         {isSpaceReady && !eventsCreated && <p>Creating events…</p>}
-//         {eventsCreated && <p>Events created!</p>}
-
-//         {eventsCreated && (
-//           <>
-//             {isQueryPending && <p>Loading events…</p>}
-//             {eventsData?.length > 0 && (
-//               <div>
-//                 <h2>Fetched Events:</h2>
-//                 <ul>
-//                   {eventsData.map((e) => (
-//                     <li key={e.id}>{e.name}</li>
-//                   ))}
-//                 </ul>
-//               </div>
-//             )}
-//           </>
-//         )}
-//       </div>
-//     </BrowserRouter>
-//   );
-// }
-
-// import { useState } from "react";
-
-// export default function FileUpload() {
-//   const [files, setFiles] = useState([]);
-//   const [dragActive, setDragActive] = useState(false);
-//   const [responses, setResponses] = useState([]);
-
-//   const handleDrag = (e) => {
-//     e.preventDefault();
-//     e.stopPropagation();
-//     if (e.type === "dragenter" || e.type === "dragover") {
-//       setDragActive(true);
-//     } else if (e.type === "dragleave") {
-//       setDragActive(false);
-//     }
-//   };
-
-//   const processFiles = (fileList) => {
-//     const newFiles = Array.from(fileList);
-
-//     newFiles.forEach((file) => {
-//       if (file.type === "text/plain") {
-//         const reader = new FileReader();
-//         reader.onload = async (event) => {
-//           const text = event.target.result;
-
-//           try {
-//             const res = await fetch("http://localhost:5500/encrypt", {
-//               method: "POST",
-//               headers: { "Content-Type": "application/json" },
-//               body: JSON.stringify({ text, fileName: file.name }),
-//             });
-
-//             const data = await res.json();
-//             setResponses((prev) => [...prev, { file: file.name, result: data }]);
-//           } catch (err) {
-//             console.error("Upload error:", err);
-//           }
-//         };
-//         reader.readAsText(file);
-//       } else {
-//         console.warn("Only .txt files are supported.");
-//       }
-//     });
-
-//     setFiles((prev) => [...prev, ...newFiles]);
-//   };
-
-//   const handleDrop = (e) => {
-//     e.preventDefault();
-//     e.stopPropagation();
-//     setDragActive(false);
-
-//     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-//       processFiles(e.dataTransfer.files);
-//       e.dataTransfer.clearData();
-//     }
-//   };
-
-//   const handleFileSelect = (e) => {
-//     processFiles(e.target.files);
-//   };
-
-//   return (
-//     <div className="container">
-//       <h2>File Drag & Drop + Encrypt</h2>
-
-//       <div
-//         className={`dropzone ${dragActive ? "active" : ""}`}
-//         onDragEnter={handleDrag}
-//         onDragOver={handleDrag}
-//         onDragLeave={handleDrag}
-//         onDrop={handleDrop}
-//         onClick={() => document.getElementById("fileInput").click()}
-//       >
-//         <p>{dragActive ? "Release to upload files" : "Drag & drop .txt files here"}</p>
-//         <p>or click to browse</p>
-//         <input
-//           id="fileInput"
-//           type="file"
-//           multiple
-//           accept=".txt"
-//           onChange={handleFileSelect}
-//           style={{ display: "none" }}
-//         />
-//       </div>
-
-//       {files.length > 0 && (
-//         <div className="file-list">
-//           <h3>Files Added:</h3>
-//           <ul>
-//             {files.map((file, idx) => (
-//               <li key={idx}>
-//                 {file.name} ({Math.round(file.size / 1024)} KB)
-//               </li>
-//             ))}
-//           </ul>
-//         </div>
-//       )}
-
-//       {responses.length > 0 && (
-//         <div className="responses">
-//           <h3>Server Responses:</h3>
-//           <ul>
-//             {responses.map((res, idx) => (
-//               <li key={idx}>
-//                 <strong>{res.file}:</strong>{" "}
-//                 {res.result?.data?.Hash
-//                   ? `Uploaded → CID: ${res.result.data.Hash}`
-//                   : `Error: ${res.result?.error || "Unknown error"}`}
-//               </li>
-//             ))}
-//           </ul>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
 import { useState } from "react";
 import lighthouse from "@lighthouse-web3/sdk";
 import Web3 from "web3";
@@ -789,6 +517,9 @@ export default function FileUpload() {
 
   const [showReclaimVerification, setShowReclaimVerification] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
+  const [showFlowOptions, setShowFlowOptions] = useState(false);
+  const [selectedFlow, setSelectedFlow] = useState<'normal' | 'direct-reclaim' | null>(null);
+  
   const connectToMetaMask = async () => {
     console.log("🔗 [WALLET DEBUG] Starting MetaMask connection...");
 
@@ -835,6 +566,9 @@ export default function FileUpload() {
           "\n🔄 [WALLET DEBUG] Fetching DataCoin information for connected account..."
         );
         await fetchDaoCoinInfo(currentAccount);
+        
+        // After successful signing, show the flow options
+        setShowFlowOptions(true);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         console.error(
@@ -966,9 +700,135 @@ export default function FileUpload() {
     setFiles((prev) => [...prev, ...newFiles]);
   };
 
+  const handleFlowSelection = (flow: 'normal' | 'direct-reclaim') => {
+    setSelectedFlow(flow);
+    setShowFlowOptions(false);
+    
+    if (flow === 'direct-reclaim') {
+      // Start direct reclaim verification process
+      handleDirectReclaimFlow();
+    }
+    // For normal flow, just continue with the existing upload process
+  };
+
+  const handleDirectReclaimFlow = async () => {
+    console.log("🚀 [DIRECT RECLAIM] Starting direct reclaim verification...");
+    
+    if (!account || !signMessage) {
+      alert("Please connect MetaMask first!");
+      return;
+    }
+
+    try {
+      // Start reclaim verification process
+      setShowReclaimVerification(true);
+      console.log("🔍 [DIRECT RECLAIM] Reclaim verification started");
+    } catch (error) {
+      console.error("❌ [DIRECT RECLAIM] Error:", error);
+      alert(`Direct reclaim flow error: ${error}`);
+    }
+  };
+
+  const handleDirectReclaimComplete = async () => {
+    console.log("✅ [DIRECT RECLAIM] Reclaim verification completed");
+    console.log("🎯 [DIRECT RECLAIM] Processing verification result...");
+    
+    if (!account || !signMessage) {
+      alert("MetaMask connection lost. Please reconnect.");
+      return;
+    }
+
+    try {
+      // For direct reclaim flow, we simulate the file upload process
+      // by creating a proof-based content that gets encrypted to lighthouse
+      const proofContent = {
+        timestamp: new Date().toISOString(),
+        account: account,
+        verificationType: "direct-reclaim",
+        message: "Direct reclaim verification completed successfully"
+      };
+
+      console.log("🔄 [DIRECT RECLAIM] Creating verification content:", proofContent);
+
+      // Send proof content to encryption endpoint
+      const response = await fetch("https://brfw2w2m-5500.inc1.devtunnels.ms/encrypt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: JSON.stringify(proofContent, null, 2),
+          fileName: `direct_reclaim_verification_${Date.now()}.json`,
+          pubKey: account,
+          signMess: signMessage,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+
+      const encryptData = await response.json();
+      console.log("📊 [DIRECT RECLAIM] Encryption response:", encryptData);
+
+      // Process the encrypted result and mint tokens
+      if (encryptData?.data?.[0]?.Hash && account) {
+        console.log("🎯 [DIRECT RECLAIM] Verification successful, starting token minting...");
+        console.log("🔗 [DIRECT RECLAIM] IPFS Hash:", encryptData.data[0].Hash);
+
+        const mintResult = await mintTokensToUser(account, 15); // Give extra tokens for direct reclaim
+        console.log("🎉 [DIRECT RECLAIM] Token minting completed:", mintResult);
+
+        // Add to responses to show in UI
+        setResponses((prev) => [
+          ...prev,
+          { 
+            file: "🔍 Direct Reclaim Verification", 
+            result: { 
+              ...encryptData, 
+              mintResult,
+              isDirectReclaim: true
+            } 
+          },
+        ]);
+
+        if (mintResult.success && mintResult.updatedTokenInfo) {
+          console.log("🎊 [DIRECT RECLAIM] Token balance updated successfully!");
+          alert(`🎉 Direct reclaim successful! Earned ${mintResult.amount} tokens!\n\n✅ Verification proof encrypted to IPFS\n🪙 Tokens sent to your wallet\n\nTransaction: ${mintResult.txHash?.substring(0, 15)}...`);
+        } else {
+          throw new Error(`Token minting failed: ${mintResult.error}`);
+        }
+      } else {
+        throw new Error("Encryption failed - no IPFS hash received");
+      }
+    } catch (error) {
+      console.error("❌ [DIRECT RECLAIM] Error processing verification:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      alert(`❌ Direct reclaim processing failed: ${errorMessage}`);
+      
+      // Add error to responses for UI feedback
+      setResponses((prev) => [
+        ...prev,
+        { 
+          file: "❌ Direct Reclaim Error", 
+          result: { 
+            error: errorMessage,
+            isDirectReclaim: true
+          } 
+        },
+      ]);
+    } finally {
+      setShowReclaimVerification(false);
+    }
+  };
+
   const processFiles = (fileList: FileList) => {
-    setPendingFiles(fileList);
-    setShowReclaimVerification(true);
+    if (selectedFlow === 'normal') {
+      // Normal flow - show reclaim verification before file upload
+      setPendingFiles(fileList);
+      setShowReclaimVerification(true);
+    } else {
+      // Direct to file processing without additional verification
+      processFilesAfterVerification(fileList);
+    }
   };
 
   const handleVerificationComplete = () => {
@@ -1006,9 +866,10 @@ export default function FileUpload() {
     <div style={styles.container}>
       <h2 style={styles.title}>File Drag & Drop + Encrypt + Earn Tokens</h2>
 
+      {/* MetaMask Connection Section - Always at the top */}
       <div style={styles.walletSection}>
         <button onClick={connectToMetaMask} style={styles.connectButton}>
-          {account ? "Wallet Connected" : "Connect Wallet"}
+          {account ? "Wallet Connected ✅" : "🦊 Connect MetaMask Wallet"}
         </button>
 
         {account && (
@@ -1034,7 +895,59 @@ export default function FileUpload() {
         )}
       </div>
 
-      {showReclaimVerification ? (
+      {/* Flow Selection Options - Show after MetaMask connection and signing */}
+      {showFlowOptions && account && signMessage && (
+        <div style={styles.flowOptionsContainer}>
+          <h3 style={styles.flowTitle}>Choose Your Journey 🚀</h3>
+          <p style={styles.flowDescription}>
+            How would you like to earn your DataCoins today?
+          </p>
+          
+          <div style={styles.flowButtons}>
+            <button 
+              onClick={() => handleFlowSelection('normal')} 
+              style={styles.normalFlowButton}
+            >
+              <div style={styles.buttonHeader}>📁 Normal Flow</div>
+              <div style={styles.buttonSubtext}>
+                Upload files → Verify with Reclaim → Encrypt → Earn tokens
+              </div>
+            </button>
+            
+            <button 
+              onClick={() => handleFlowSelection('direct-reclaim')} 
+              style={styles.directReclaimButton}
+            >
+              <div style={styles.buttonHeader}>⚡ Direct Reclaim</div>
+              <div style={styles.buttonSubtext}>
+                Start verification now → Get proof → Earn tokens immediately
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Direct Reclaim Verification Modal */}
+      {showReclaimVerification && selectedFlow === 'direct-reclaim' && (
+        <div style={styles.verificationContainer}>
+          <h3>🔍 Direct Reclaim Verification</h3>
+          <p>Complete verification to earn tokens immediately!</p>
+          <StartReclaimVerification
+            onVerificationComplete={handleDirectReclaimComplete}
+          />
+          <div style={styles.buttonContainer}>
+            <button 
+              onClick={() => setShowReclaimVerification(false)} 
+              style={styles.cancelButton}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Normal Flow File Upload Verification */}
+      {showReclaimVerification && selectedFlow === 'normal' && pendingFiles && (
         <div style={styles.verificationContainer}>
           <h3>Please complete verification before uploading files</h3>
           <StartReclaimVerification
@@ -1052,32 +965,57 @@ export default function FileUpload() {
             </button>
           </div>
         </div>
-      ) : (
-        <div
-          style={{
-            ...styles.dropzone,
-            ...(dragActive ? styles.activeDropzone : {}),
-          }}
-          onDragEnter={handleDrag}
-          onDragOver={handleDrag}
-          onDragLeave={handleDrag}
-          onDrop={handleDrop}
-          onClick={() => document.getElementById("fileInput")?.click()}
-        >
-          <p style={styles.dropText}>
-            {dragActive
-              ? "Release to upload files"
-              : "Drag & drop .txt files here"}
-          </p>
-          <p style={styles.dropSubText}>or click to browse</p>
-          <input
-            id="fileInput"
-            type="file"
-            multiple
-            accept=".txt"
-            onChange={handleFileSelect}
-            style={{ display: "none" }}
-          />
+      )}
+
+      {/* File Upload Area - Only show if wallet connected and flow selected */}
+      {account && signMessage && !showFlowOptions && !showReclaimVerification && (
+        <>
+          <div
+            style={{
+              ...styles.dropzone,
+              ...(dragActive ? styles.activeDropzone : {}),
+            }}
+            onDragEnter={handleDrag}
+            onDragOver={handleDrag}
+            onDragLeave={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => document.getElementById("fileInput")?.click()}
+          >
+            <p style={styles.dropText}>
+              {dragActive
+                ? "Release to upload files"
+                : "Drag & drop .txt files here"}
+            </p>
+            <p style={styles.dropSubText}>or click to browse</p>
+            <input
+              id="fileInput"
+              type="file"
+              multiple
+              accept=".txt"
+              onChange={handleFileSelect}
+              style={{ display: "none" }}
+            />
+          </div>
+
+          {selectedFlow === 'normal' && (
+            <div style={styles.helpText}>
+              💡 Files will go through verification before upload in normal flow
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Connection Prompt */}
+      {!account && (
+        <div style={styles.connectionPrompt}>
+          <h3>🚀 Get Started</h3>
+          <p>Connect your MetaMask wallet to begin earning DataCoins!</p>
+          <ul style={styles.featureList}>
+            <li>🔒 Secure file encryption with Lighthouse</li>
+            <li>🪙 Earn DataCoins for every upload</li>
+            <li>✅ Reclaim verification for extra security</li>
+            <li>⚡ Choose between normal or direct verification flows</li>
+          </ul>
         </div>
       )}
 
@@ -1096,32 +1034,54 @@ export default function FileUpload() {
 
       {responses.length > 0 && (
         <div style={styles.responses}>
-          <h3>Server Responses:</h3>
+          <h3>Transaction Results:</h3>
           <ul>
             {responses.map((res, idx) => (
-              <li key={idx}>
+              <li key={idx} style={{ marginBottom: '15px' }}>
                 <strong>{res.file}:</strong>{" "}
-                {res.result?.data?.[0]?.Hash ? (
+                {res.result?.error ? (
+                  <div style={{ color: '#ff6b6b', marginTop: '5px' }}>
+                    ❌ Error: {res.result.error}
+                  </div>
+                ) : res.result?.data?.[0]?.Hash ? (
                   <div>
-                    <div>Uploaded → CID: {res.result.data[0].Hash}</div>
+                    <div style={{ color: '#51cf66' }}>
+                      ✅ {res.result?.isDirectReclaim ? 'Verification Proof' : 'File'} Uploaded → CID: {res.result.data[0].Hash}
+                    </div>
                     {res.result?.mintResult && (
-                      <div style={{ marginLeft: "10px", fontSize: "0.9em" }}>
+                      <div style={{ 
+                        marginLeft: "10px", 
+                        fontSize: "0.9em",
+                        marginTop: '8px',
+                        padding: '10px',
+                        background: res.result.mintResult.success 
+                          ? 'rgba(34, 197, 94, 0.1)' 
+                          : 'rgba(239, 68, 68, 0.1)',
+                        borderRadius: '8px',
+                        border: res.result.mintResult.success 
+                          ? '1px solid rgba(34, 197, 94, 0.3)' 
+                          : '1px solid rgba(239, 68, 68, 0.3)'
+                      }}>
                         {res.result.mintResult.success
-                          ? `✅ Sent ${
-                              res.result.mintResult.amount
-                            } tokens to your wallet! TX: ${res.result.mintResult.txHash?.substring(
-                              0,
-                              10
-                            )}... (via ${res.result.mintResult.from?.substring(
-                              0,
-                              6
-                            )}...)`
+                          ? `🪙 Earned ${res.result.mintResult.amount} ${res.result?.isDirectReclaim ? '(bonus for direct reclaim!)' : ''} DataCoins!
+                             📝 TX: ${res.result.mintResult.txHash?.substring(0, 10)}... 
+                             👤 From: ${res.result.mintResult.from?.substring(0, 6)}...${res.result.mintResult.from?.substring(res.result.mintResult.from.length - 4)}`
                           : `❌ Token transfer failed: ${res.result.mintResult.error}`}
+                      </div>
+                    )}
+                    {res.result?.isDirectReclaim && (
+                      <div style={{ 
+                        marginTop: '8px', 
+                        fontSize: '0.85em', 
+                        color: '#a855f7',
+                        fontStyle: 'italic'
+                      }}>
+                        🚀 Direct reclaim verification - no file upload required!
                       </div>
                     )}
                   </div>
                 ) : (
-                  `Error: ${res.result?.error || "Unknown error"}`
+                  `❌ Error: ${res.result?.error || "Unknown error"}`
                 )}
               </li>
             ))}
@@ -1290,6 +1250,109 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "white",
     fontSize: "0.95rem",
     lineHeight: "1.7",
+    backdropFilter: "blur(10px)",
+  },
+  // New styles for flow options
+  flowOptionsContainer: {
+    marginTop: "40px",
+    marginBottom: "40px",
+    padding: "40px",
+    background:
+      "linear-gradient(135deg, rgba(138, 43, 226, 0.15), rgba(138, 43, 226, 0.08))",
+    borderRadius: "20px",
+    border: "1px solid rgba(138, 43, 226, 0.3)",
+    backdropFilter: "blur(10px)",
+    textAlign: "center" as const,
+  },
+  flowTitle: {
+    color: "white",
+    fontSize: "1.8rem",
+    fontWeight: "700",
+    marginBottom: "15px",
+    textShadow: "0 2px 10px rgba(0, 0, 0, 0.3)",
+  },
+  flowDescription: {
+    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: "1.1rem",
+    marginBottom: "35px",
+    lineHeight: "1.6",
+  },
+  flowButtons: {
+    display: "flex",
+    gap: "30px",
+    justifyContent: "center",
+    flexWrap: "wrap" as const,
+  },
+  normalFlowButton: {
+    background: "linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(59, 130, 246, 0.6))",
+    color: "white",
+    border: "none",
+    padding: "25px 30px",
+    borderRadius: "20px",
+    cursor: "pointer",
+    fontSize: "1rem",
+    fontWeight: "600",
+    transition: "all 0.3s ease",
+    backdropFilter: "blur(10px)",
+    minWidth: "280px",
+    textAlign: "left" as const,
+    position: "relative" as const,
+    overflow: "hidden",
+  },
+  directReclaimButton: {
+    background: "linear-gradient(135deg, rgba(236, 72, 153, 0.8), rgba(236, 72, 153, 0.6))",
+    color: "white",
+    border: "none",
+    padding: "25px 30px",
+    borderRadius: "20px",
+    cursor: "pointer",
+    fontSize: "1rem",
+    fontWeight: "600",
+    transition: "all 0.3s ease",
+    backdropFilter: "blur(10px)",
+    minWidth: "280px",
+    textAlign: "left" as const,
+    position: "relative" as const,
+    overflow: "hidden",
+  },
+  buttonHeader: {
+    fontSize: "1.3rem",
+    fontWeight: "700",
+    marginBottom: "10px",
+  },
+  buttonSubtext: {
+    fontSize: "0.9rem",
+    opacity: "0.9",
+    lineHeight: "1.4",
+  },
+  connectionPrompt: {
+    marginTop: "40px",
+    padding: "40px",
+    background:
+      "linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.08))",
+    borderRadius: "20px",
+    border: "1px solid rgba(16, 185, 129, 0.3)",
+    backdropFilter: "blur(10px)",
+    textAlign: "center" as const,
+    color: "white",
+  },
+  featureList: {
+    textAlign: "left" as const,
+    maxWidth: "400px",
+    margin: "30px auto 0",
+    fontSize: "1rem",
+    lineHeight: "2",
+    color: "rgba(255, 255, 255, 0.9)",
+  },
+  helpText: {
+    marginTop: "20px",
+    padding: "15px 25px",
+    background: "rgba(59, 130, 246, 0.1)",
+    border: "1px solid rgba(59, 130, 246, 0.3)",
+    borderRadius: "15px",
+    color: "white",
+    textAlign: "center" as const,
+    fontSize: "0.95rem",
     backdropFilter: "blur(10px)",
   },
 };
