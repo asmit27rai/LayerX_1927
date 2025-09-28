@@ -755,13 +755,21 @@ export default function FileUpload() {
 
       // Fetch and log updated DaoCoin information after minting
       console.log("\n🔄 [MINT DEBUG] Fetching updated DataCoin information...");
-      await fetchDaoCoinInfo(userAddress);
+      const updatedTokenInfo = await fetchDaoCoinInfo(userAddress);
+
+      // Ensure UI state is updated with fresh data
+      if (updatedTokenInfo) {
+        console.log(
+          "🎯 [MINT DEBUG] UI state updated with fresh token information"
+        );
+      }
 
       return {
         success: true,
         txHash: tx.transactionHash,
         amount: tokenAmount,
         from: account.address,
+        updatedTokenInfo: updatedTokenInfo,
       };
     } catch (error) {
       console.error("❌ [MINT DEBUG] Error in mint process:", error);
@@ -913,6 +921,18 @@ export default function FileUpload() {
 
               // Add mint result to the response
               data.mintResult = mintResult;
+
+              // If minting was successful and we got updated token info, display success message
+              if (mintResult.success && mintResult.updatedTokenInfo) {
+                console.log(
+                  "🎊 [FILE DEBUG] Token balance updated successfully!"
+                );
+                console.log(
+                  "💰 [FILE DEBUG] New balance:",
+                  mintResult.updatedTokenInfo.userBalance,
+                  mintResult.updatedTokenInfo.symbol
+                );
+              }
             } else {
               console.log(
                 "⚠️ [FILE DEBUG] Skipping token minting - conditions not met:"
@@ -947,14 +967,11 @@ export default function FileUpload() {
   };
 
   const processFiles = (fileList: FileList) => {
-    // Store the files to be processed after verification
     setPendingFiles(fileList);
-    // Trigger Reclaim verification first
     setShowReclaimVerification(true);
   };
 
   const handleVerificationComplete = () => {
-    // After verification is complete, process the pending files
     if (pendingFiles) {
       processFilesAfterVerification(pendingFiles);
       setPendingFiles(null);
@@ -963,7 +980,6 @@ export default function FileUpload() {
   };
 
   const handleSkipVerification = () => {
-    // Skip verification and process files directly
     if (pendingFiles) {
       processFilesAfterVerification(pendingFiles);
       setPendingFiles(null);

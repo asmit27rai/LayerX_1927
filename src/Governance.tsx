@@ -4,10 +4,10 @@ import { useBalance } from "./BalanceContext";
 
 export default function Governance() {
   const navigate = useNavigate();
-  const { userBalance } = useBalance();
+  const { totalSupply } = useBalance();
 
-  // Convert userBalance to number for calculations, fallback to 200 if not available
-  const totalCoins = parseFloat(userBalance) || 200;
+  // Convert totalSupply to number for calculations, fallback to 200 if not available
+  const totalCoins = parseFloat(totalSupply) || 200;
 
   // Dynamic proposals
   const [proposals] = useState([
