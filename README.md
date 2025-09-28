@@ -56,6 +56,15 @@ LayerX is a comprehensive DataDAO platform that combines secure data storage, cr
 
 ## 🔮 Hypergraph Schema
 
+This document provides a comprehensive overview of the Hypergraph schema used in this governance application, including entity definitions, relationships, and usage examples.
+
+## Overview
+
+This schema implements a decentralized governance system with the following core concepts:
+- DAOs: Decentralized Autonomous Organizations
+- Voters/Members: Participants with voting power based on token holdings
+- Proposals: Governance proposals that can be voted on
+- Votes: Individual voting records on proposals
 
 
 ## 🛡️ Why These Technologies?
