@@ -15,8 +15,6 @@ const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  if (location.pathname === "/") return null;
-
   return (
     <nav className="app-navigation">
       <div className="nav-container">
@@ -78,7 +76,7 @@ const Home = () => {
         </div>
 
         <div className="feature-cards">
-          <div className="feature-card">
+          <div className="feature-card" onClick={() => navigate("/upload")}>
             <div className="card-icon">📁</div>
             <h3 className="card-title">Upload Data</h3>
             <p className="card-description">
@@ -87,13 +85,16 @@ const Home = () => {
             <button
               className="card-arrow-button"
               aria-label="Go to Upload"
-              onClick={() => navigate("/upload")}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/upload");
+              }}
             >
               <span className="card-arrow">→</span>
             </button>
           </div>
 
-          <div className="feature-card">
+          <div className="feature-card" onClick={() => navigate("/governance")}>
             <div className="card-icon">🗳️</div>
             <h3 className="card-title">Governance</h3>
             <p className="card-description">
@@ -102,25 +103,13 @@ const Home = () => {
             <button
               className="card-arrow-button"
               aria-label="Go to Governance"
-              onClick={() => navigate("/governance")}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/governance");
+              }}
             >
               <span className="card-arrow">→</span>
             </button>
-          </div>
-        </div>
-
-        <div className="home-stats">
-          <div className="stat-item">
-            <div className="stat-number">1,234</div>
-            <div className="stat-label">Files Uploaded</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">567</div>
-            <div className="stat-label">Active Voters</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">89%</div>
-            <div className="stat-label">Uptime</div>
           </div>
         </div>
       </div>
