@@ -51,18 +51,20 @@ LayerX is a comprehensive DataDAO platform that combines secure data storage, cr
 
 - **Network**: Sepolia Testnet
 - **Address**: `0xa14159C1B383fBCa4A9C197aFC83E01DB4655B24`
-- **Type**: ERC-20 Token with minting capabilities
+- **Type**:  https://sepolia.etherscan.io/token/0xa14159c1b383fbca4a9c197afc83e01db4655b24
 - **Features**: Role-based access control, vesting, and governance integration
-
-### Key Functions
-
-- `mint(address to, uint256 amount)` - Mint tokens to users
-- `balanceOf(address account)` - Check user token balance
-- `totalSupply()` - Get total tokens in circulation
-- `hasRole(bytes32 role, address account)` - Verify permissions
 
 ## 🔮 Hypergraph Schema
 
+This document provides a comprehensive overview of the Hypergraph schema used in this governance application, including entity definitions, relationships, and usage examples.
+
+## Overview
+
+This schema implements a decentralized governance system with the following core concepts:
+- DAOs: Decentralized Autonomous Organizations
+- Voters/Members: Participants with voting power based on token holdings
+- Proposals: Governance proposals that can be voted on
+- Votes: Individual voting records on proposals
 
 
 ## 🛡️ Why These Technologies?
