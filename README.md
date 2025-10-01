@@ -224,7 +224,11 @@ src/
    VITE_PRIVATE_KEY=your_private_key_here
    ```
 
-4. **Start the development server**
+4. **SetUp The Backend**
+    - [Click Here For The Backend Setup](https://github.com/Minimega12121/Eth-Delhi/blob/dummy/README.md)
+    - Copy The Forwarded Link From The Backend And Put It [Here](https://github.com/asmit27rai/LayerX_1927/blob/main/src/FileUpload.tsx#L754)
+
+5. **Start the development server**
 
    ```bash
    npm run dev
